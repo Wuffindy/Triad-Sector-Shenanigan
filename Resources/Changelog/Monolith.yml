@@ -17475,3 +17475,10 @@ Entries:
   id: 1928
   time: '2026-02-26T05:27:23.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3261
+- author: lopsidedmanboobs
+  changes:
+    - type: Tweak
+      message: Core Rule 2 has been updated, read it by pressing F10 & clicking "rules"
+  id: 1929
+  time: '2026-02-27T00:23:30.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3294
