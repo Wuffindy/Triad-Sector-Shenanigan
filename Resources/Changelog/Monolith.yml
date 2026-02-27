@@ -17482,3 +17482,10 @@ Entries:
   id: 1929
   time: '2026-02-27T00:23:30.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3294
+- author: Redrover1760
+  changes:
+    - type: Fix
+      message: Blip Lag Fix Probably
+  id: 1930
+  time: '2026-02-27T01:07:07.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3295
