@@ -17788,3 +17788,14 @@ Entries:
   id: 1960
   time: '2026-03-03T20:32:58.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3318
+- author: Redrover1760
+  changes:
+    - type: Tweak
+      message: >-
+        Buffs merc webvest, type 1 armor vests, reflective vests, captain
+        carapace to be at least mildly competitive with other armor vest options
+    - type: Add
+      message: Adds missing stamina resistance to webvest and merc webvests.
+  id: 1961
+  time: '2026-03-03T21:32:30.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3297
