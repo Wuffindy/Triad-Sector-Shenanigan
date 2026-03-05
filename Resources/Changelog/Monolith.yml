@@ -17909,3 +17909,10 @@ Entries:
   id: 1973
   time: '2026-03-05T23:56:56.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3356
+- author: UnicornOnLSD
+  changes:
+    - type: Tweak
+      message: Resprited the DI Emblem
+  id: 1974
+  time: '2026-03-05T23:58:56.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3319
