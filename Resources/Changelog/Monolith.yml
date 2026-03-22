@@ -18612,3 +18612,10 @@ Entries:
   id: 2054
   time: '2026-03-22T11:04:46.0000000+00:00'
   url: https://github.com/Monolith-Station/Monolith/pull/3469
+- author: Corrupt142
+  changes:
+    - type: Tweak
+      message: 'Nerfed wyverns armament '
+  id: 2055
+  time: '2026-03-22T11:13:01.0000000+00:00'
+  url: https://github.com/Monolith-Station/Monolith/pull/3426
