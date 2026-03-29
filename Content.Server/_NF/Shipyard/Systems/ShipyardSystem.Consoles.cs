@@ -565,7 +565,14 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
         bool loaded = false;
         try
         {
-            if (!string.IsNullOrWhiteSpace(args.SourceFilePath))
+            // HardLight start
+            if (!string.IsNullOrWhiteSpace(args.YamlData))
+            {
+                loaded = TryPurchaseShuttleFromYamlData(uid, args.YamlData, out shuttleUidOut);
+            }
+
+            if (!loaded && !string.IsNullOrWhiteSpace(args.SourceFilePath))
+            // HardLight end
             {
                 // Normalize to a ResPath under /UserData
                 var norm = args.SourceFilePath!.Replace('\\', '/');
@@ -576,12 +583,6 @@ public sealed partial class ShipyardSystem : SharedShipyardSystem
 
                 var resPath = new ResPath(norm);
                 loaded = TryPurchaseShuttleFromFile(uid, resPath, out shuttleUidOut);
-            }
-
-            // Fallback: write to a temp file and then load via purchase-from-file
-            if (!loaded)
-            {
-                loaded = TryPurchaseShuttleFromYamlData(uid, args.YamlData, out shuttleUidOut);
             }
         }
         catch (Exception ex)

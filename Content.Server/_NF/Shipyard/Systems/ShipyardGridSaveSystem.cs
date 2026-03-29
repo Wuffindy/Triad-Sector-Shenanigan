@@ -1,39 +1,48 @@
-using Content.Shared._NF.Shipyard.Components;
-using Content.Shared._NF.Shipyard.Events;
-using Content.Shared.Shuttles.Save; // For SendShipSaveDataClientMessage
-using Content.Server.Atmos.Piping.Components;
-using Content.Server.Power.Components;
-using Content.Server.Power.EntitySystems;
-using Content.Shared.VendingMachines;
-using Robust.Shared.Player;
-using Robust.Shared.Map.Components;
-using Robust.Shared.EntitySerialization.Systems;
-using Robust.Shared.Utility;
-using Robust.Shared.ContentPack;
-using Robust.Server.Player;
-using Robust.Shared.EntitySerialization;
-using Robust.Shared.Physics.Components;
-using Robust.Shared.Containers;
 using System.IO;
 using System.Threading.Tasks;
+using Content.Server.Atmos.Piping.Components;
+using Content.Server.Chemistry.Components;
+using Content.Server.Construction.Components;
+using Content.Server.Power.Components;
+using Content.Server.Power.EntitySystems;
+using Content.Server.Store.Components; // HardLight
+using Content.Server._HL.Shipyard; // HardLight
+using Content.Shared._Common.Consent; // HardLight
+using Content.Shared._HL.Shipyard; // HardLight
+using Content.Shared._NF.Shipyard.Components;
+using Content.Shared._NF.Shipyard.Events;
+using Content.Shared.Chemistry.Components;
+using Content.Shared.Chemistry.Components.SolutionManager;
+using Content.Shared.Chemistry.EntitySystems;
+using Content.Shared.DeviceLinking;
+using Content.Shared.DeviceLinking.Components;
+using Content.Shared.Implants.Components; // HardLight
+using Content.Shared.Light.Components; // HardLight
+using Content.Shared.Mind.Components; // HardLight
+using Content.Shared.Shuttles.Save; // For SendShipSaveDataClientMessage
+using Content.Shared.SprayPainter.Components; // HardLight
+using Content.Shared.SprayPainter.Prototypes; // HardLight
+using Content.Shared.Storage.Components;
+using Content.Shared.VendingMachines;
+using Content.Shared.Wall; // WallMountComponent for preserving wall-mounted fixtures
+using Robust.Server.GameObjects; // HardLight
+using Robust.Server.Player;
+using Robust.Shared.Containers;
+using Robust.Shared.ContentPack;
+using Robust.Shared.EntitySerialization;
+using Robust.Shared.EntitySerialization.Systems;
+using Robust.Shared.Map.Components;
+using Robust.Shared.Physics;
+using Robust.Shared.Physics.Components;
+using Robust.Shared.Player;
+using Robust.Shared.Prototypes; // HardLight
+using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.Markdown.Mapping;
 using Robust.Shared.Serialization.Markdown.Sequence;
 using Robust.Shared.Serialization.Markdown.Value;
-using YamlDotNet.RepresentationModel;
+using Robust.Shared.Utility;
 using YamlDotNet.Core;
-using Robust.Shared.Serialization;
-using Content.Shared.Storage.Components;
-using Content.Shared.Wall; // WallMountComponent for preserving wall-mounted fixtures
-using Robust.Shared.Physics;
-using Content.Shared.Chemistry.Components;
-using Content.Shared.Chemistry.Components.SolutionManager;
-using Content.Server.Construction.Components;
-using Content.Shared._HL.Shipyard;
-// HardLight start
-using Robust.Shared.Prototypes;
-using Content.Shared.Mind.Components;
-using Content.Shared._Common.Consent;
-// HardLight end
+using YamlDotNet.RepresentationModel;
 
 namespace Content.Server._NF.Shipyard.Systems;
 
@@ -44,6 +53,13 @@ namespace Content.Server._NF.Shipyard.Systems;
 /// </summary>
 public sealed class ShipyardGridSaveSystem : EntitySystem
 {
+    // HardLight: List of currency prototypes that should be stripped from ship saves.
+    private static readonly HashSet<string> NonPersistentShipSaveCurrencies = new(StringComparer.Ordinal)
+    {
+        "Telecrystal",
+        // "Doubloon",
+    };
+
     [Dependency] private readonly IEntityManager _entityManager = default!;
     [Dependency] private readonly IEntitySystemManager _entitySystemManager = default!;
     [Dependency] private readonly IPlayerManager _playerManager = default!;
@@ -606,501 +622,7 @@ public sealed class ShipyardGridSaveSystem : EntitySystem
     /// </summary>
     private void SanitizeShipSaveNode(MappingDataNode root)
     {
-        // Ensure nullspace is empty
-        try
-        {
-            root["nullspace"] = new SequenceDataNode();
-        }
-        catch (Exception e)
-        {
-            _sawmill.Warning($"Failed to clear nullspace: {e.Message}");
-        }
-
-        if (!root.TryGet("entities", out SequenceDataNode? protoSeq) || protoSeq == null)
-            return;
-
-        var filteredTypes = new HashSet<string> // HardLight: Components you want removed from entities on save and restored on load go here.
-        {
-            "Joint",
-            "StationMember",
-            "NavMap",
-            "ShuttleDeed",
-            "IFF",
-            "LinkedLifecycleGridParent",
-            "AccessReader", // Door logs
-            "DeviceList",
-            "DeviceNetwork",
-            "DeviceNetworkComponent",
-            "UserInterface", // Contains invalid EntityUid references
-            "Docking", // Contains invalid EntityUid references to docked entities
-            "ActionGrant", // Contains invalid EntityUid references to granted actions
-            "Mind", // Contains player state that can't be serialized and isn't relevant to ship blueprints
-            "MindContainer", // Contains player state that can't be serialized and isn't relevant to ship blueprints
-            "VendingMachine", // Vending machines restock on ship load, sometimes infinitely; this should prevent that behavior
-        };
-
-        var fillComponentTypes = new HashSet<string>(StringComparer.Ordinal) // HardLight: Components you want permanently removed from entities go here.
-        {
-            "StorageFill", // Remove refill-on-spawn behavior on ship save only
-            "ContainerFill", // Remove refill-on-spawn behavior on ship save only
-            "EntityTableContainerFill", // Remove refill-on-spawn behavior on ship save only
-        };
-
-        var fillComponentWhitelistPrototypes = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase) // HardLight: Entities you want to bypass the fill component removal for go here.
-        {
-            "AirAlarm",
-        };
-
-        /// <summary>
-        /// HardLight: Explicitly preserve case-sensitive component names that are known to cause issues if included in ship saves, even if they exist on entities.
-        /// This is a blunt tool but it ensures we won't accidentally break ship saves by adding new components in the future without remembering to filter them here.
-        /// </summary>
-        var forcedMissingComponents = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "StorageFill",
-            "ContainerFill",
-            "EntityTableContainerFill",
-        };
-
-        // Prototype-level exclusions for obvious non-ship entities.
-        // If we encounter these, we drop them entirely from the export.
-        // NOTE: Some names like "Forensics" appear in both filteredTypes and filteredPrototypes.
-        // filteredTypes removes the component from entities, while filteredPrototypes removes entire entities with that prototype ID.
-        var filteredPrototypes = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
-        {
-            // admin / ghost observers, spectators, etc.
-            "AdminObserver",
-            "AdminObserverDummy",
-            "Ghost",
-            "GhostRoleMob",
-            "HumanoidAppearance",
-            "GeneralStationRecordConsole",
-            // Uplinks and bundled items
-            "BaseMercenaryUplinkRadio",
-            "MachineFlatpacker",
-            "ComputerContrabandPalletConsole",
-            "ComputerContrabandPalletConsolePirate",
-            "ComputerCriminalRecords",
-            "ComputerEmergencyShuttle",
-            "ComputerMarketConsoleNFHigh",
-            "ComputerMarketConsoleNFLow",
-            "ComputerMarketConsoleNFNormal",
-            "ComputerMedicalRecords",
-            "ComputerPalletConsoleNFHighMarket",
-            "ComputerPalletConsoleNFLowMarket",
-            "ComputerPalletConsoleNFNormalMarket",
-            "ComputerPalletConsoleNFVeryHighMarket",
-            "ComputerPalletConsoleNFVeryLowMarket",
-            "ComputerPsionicsRecords",
-            "ComputerRoboticsControl",
-            "ComputerShipyard",
-            "ComputerShipyardBlackMarket",
-            "ComputerShipyardExpedition",
-            "ComputerShipyardMedical",
-            "ComputerShipyardNfsd",
-            "ComputerShipyardScrap",
-            "ComputerShipyardSecurity",
-            "ComputerShipyardSr",
-            "ComputerShipyardSyndicate",
-            "ComputerShuttleRecords",
-            "ComputerStationRecords",
-            "ComputerTabletopContrabandPalletConsole",
-            "ComputerTabletopContrabandPalletConsolePirate",
-            "ComputerTabletopCriminalRecords",
-            "ComputerTabletopMarketConsoleNFHigh",
-            "ComputerTabletopMarketConsoleNFLow",
-            "ComputerTabletopMarketConsoleNFNormal",
-            "ComputerTabletopMedicalRecords",
-            "ComputerTabletopPalletConsoleNFHighMarket",
-            "ComputerTabletopPalletConsoleNFLowMarket",
-            "ComputerTabletopPalletConsoleNFNormalMarket",
-            "ComputerTabletopPalletConsoleNFVeryLowMarket",
-            "ComputerTabletopShipyardBlackMarket",
-            "ComputerTabletopShipyardExpedition",
-            "ComputerTabletopShipyardNfsd",
-            "ComputerTabletopShipyardScrap",
-            "ComputerTabletopShipyardSecurity",
-            "ComputerTabletopShuttleAntag",
-            "ComputerTabletopStationRecords",
-            "ComputerWallmountStationRecords",
-            "DEBUGVendingMachineAmmoBoxes",
-            "DEBUGVendingMachineMagazines",
-            "DEBUGVendingMachineRangedWeapons",
-            "PsionicsRecordsComputerCircuitboard",
-            "StationAiUploadComputer",
-            "VendingMachineAmmoPOI",
-            "VendingMachineAstroVendPOI",
-            "VendingMachineBoozePOI",
-            "VendingMachineBountyVendPOI",
-            "VendingMachineCigsPOI",
-            "VendingMachineEngivendPOI",
-            "VendingMachineExpeditionaryFlatpackVend",
-            "VendingMachineFlatpackVend",
-            "VendingMachineFuelVend",
-            "VendingMachineGamesPOI",
-            "LessLethalVendingMachinePOI",
-            "VendingMachineMediDrobePOI",
-            "VendingMachineMercVend",
-            "VendingMachinePickNPackPOI",
-            "VendingMachinePottedPlantVendPOI",
-            "VendingMachineSalvagePOI",
-            "VendingMachineSyndieContraband",
-            "VendingMachineTankDispenserEVAPOI",
-            "VendingMachineVendomatPOI",
-            "VendingMachineYouToolPOI",
-            "BaseMercenaryUplinkRadio",
-            "BaseUplinkRadio",
-            "BaseUplinkRadio20TC",
-            "BaseUplinkRadio25TC",
-            "BaseUplinkRadio40TC",
-            "BaseUplinkRadio60TC",
-            "UplinkImplanter",
-            "BaseSecurityUplinkRadio",
-            "BaseSecurityUplinkRadioSheriff",
-            "BaseSecurityUplinkRadioOfficer",
-            "BaseSecurityUplinkRadioDeputy",
-            "BasePirateUplink",
-            "BasePirateUplinkRadioPirateCaptain",
-            "BasePirateUplinkPirateCrew",
-
-        };
-
-        foreach (var protoNode in protoSeq)
-        {
-            if (protoNode is not MappingDataNode protoMap)
-                continue;
-
-            if (!protoMap.TryGet("entities", out SequenceDataNode? entitiesSeq) || entitiesSeq == null)
-                continue;
-
-            for (var i = 0; i < entitiesSeq.Count; i++)
-            {
-                if (entitiesSeq[i] is not MappingDataNode entMap)
-                    continue;
-
-                // Remove map initialization flags
-                entMap.Remove("mapInit");
-                entMap.Remove("paused");
-
-                // Optional: Drop entities that are clearly unrelated by prototype id.
-                // Each proto group node contains a "proto" key with the prototype id string.
-                var hasProtoGroup = false;
-                var allowFillComponents = false; // HardLight
-                HashSet<string>? protoMissing = null;
-                if (protoMap.TryGet("proto", out ValueDataNode? protoIdNode) && protoIdNode != null)
-                {
-                    hasProtoGroup = true;
-                    var protoId = protoIdNode.Value;
-                    allowFillComponents = fillComponentWhitelistPrototypes.Contains(protoId); // HardLight
-                    if (filteredPrototypes.Contains(protoId))
-                    {
-                        // Remove this entity entirely
-                        entitiesSeq.RemoveAt(i);
-                        i--;
-                        continue;
-                    }
-
-                    // HardLight start: If this prototype is on the fill component whitelist, allow fill components to remain even if they are on the forced missing list.
-                    // This ensures critical entities like air alarms keep their fill components for proper functionality.
-                    if (_prototypeManager.TryIndex<EntityPrototype>(protoId, out var proto))
-                    {
-                        if (!allowFillComponents && proto.Components.ContainsKey("Door"))
-                            allowFillComponents = true;
-
-                        if (!allowFillComponents) // If a prototype contains components that are forced missing, track them so we can remove those components from all entities of that prototype below.
-                        {
-                            foreach (var name in forcedMissingComponents)
-                            {
-                                if (proto.Components.ContainsKey(name))
-                                {
-                                    protoMissing ??= new HashSet<string>(StringComparer.Ordinal);
-                                    protoMissing.Add(name);
-                                }
-                            }
-                        }
-                    }
-                    // HardLight end
-                }
-
-                // Components cleanup
-                if (!entMap.TryGet("components", out SequenceDataNode? comps) || comps == null)
-                {
-                    // If there are no components left, this entity is empty and can be removed
-                    entitiesSeq.RemoveAt(i);
-                    i--;
-                    continue;
-                }
-
-                // Determine if this entity is the grid root (has MapGrid component)
-                var hasMapGrid = false;
-                var compsNotNull = comps!; // Assert non-null for analyzer; guarded above.
-                foreach (var c in compsNotNull)
-                {
-                    if (c is MappingDataNode cm && cm.TryGet("type", out ValueDataNode? t) && t != null && t.Value == "MapGrid")
-                    {
-                        hasMapGrid = true;
-                        break;
-                    }
-                }
-
-                // HardLight start: If this entity has a Door component, we should allow fill components to remain even if they are on the forced missing list,
-                // since many doors require a StorageFill or ContainerFill to function properly.
-                var hasDoorComponent = false;
-                foreach (var c in compsNotNull)
-                {
-                    if (c is MappingDataNode cm && cm.TryGet("type", out ValueDataNode? t) && t != null && t.Value == "Door")
-                    {
-                        hasDoorComponent = true;
-                        break;
-                    }
-                }
-
-                if (hasDoorComponent)
-                {
-                    allowFillComponents = true;
-                    // Door-based allow list should not mark fill components as missing.
-                    protoMissing = null;
-                }
-                // HardLight end
-
-                var newComps = new SequenceDataNode();
-                var removedFromPrototype = hasProtoGroup ? new HashSet<string>(StringComparer.Ordinal) : null; // HardLight: Track which components were removed due to prototype-level filtering so we can log them at the end.
-                foreach (var compNode in compsNotNull)
-                {
-                    if (compNode is not MappingDataNode compMap)
-                        continue;
-
-                    if (!compMap.TryGet("type", out ValueDataNode? typeNode) || typeNode == null)
-                    {
-                        newComps.Add(compMap);
-                        continue;
-                    }
-
-                    var typeName = typeNode.Value;
-
-                    // Filter out undesired component types entirely
-                    if (filteredTypes.Contains(typeName))
-                    {
-                        // HardLight start: If this component is on a prototype with forced missing components, track it so we can remove those components from all entities of that prototype below.
-                        if (allowFillComponents && fillComponentTypes.Contains(typeName))
-                        {
-                            newComps.Add(compMap);
-                            continue;
-                        }
-
-                        if (forcedMissingComponents.Contains(typeName))
-                            removedFromPrototype?.Add(typeName);
-                        continue;
-                        // HardLight end
-                    }
-
-                    // Transform: remove rotation on the grid root to match blueprint expectations
-                    if (typeName == "Transform" && hasMapGrid)
-                    {
-                        compMap.Remove("rot");
-                    }
-
-                    // Gravity: preserve enabled state so gravity persists on ship load
-                    // (Removed stripping of enabled field)
-
-                    // SpreaderGrid: strip accumulator fields
-                    if (typeName == "SpreaderGrid")
-                    {
-                        compMap.Remove("updateAccumulator");
-                        compMap.Remove("UpdateAccumulator");
-                    }
-
-                    // VendingMachine: strip runtime inventory & timers to match blueprint expectations
-                    if (typeName == "VendingMachine")
-                    {
-                        compMap.Remove("Inventory");
-                        compMap.Remove("EmaggedInventory");
-                        compMap.Remove("ContrabandInventory");
-                        compMap.Remove("Contraband");
-                        compMap.Remove("EjectEnd");
-                        compMap.Remove("DenyEnd");
-                        compMap.Remove("DispenseOnHitEnd");
-                        compMap.Remove("NextEmpEject");
-                        compMap.Remove("EjectRandomCounter");
-                    }
-
-                    // DeviceLink: Keep device links intact - they should persist
-                    // (Removed clearing of linkedPorts and links)
-
-                    // Solution/SolutionContainer: Keep solution contents - they should persist
-                    // (Removed clearing of solutions and contents)
-
-                    // ResearchServer: reset research server state
-                    if (typeName == "ResearchServer")
-                    {
-                        compMap.Remove("points");
-                        compMap.Remove("Points");
-                        compMap.Remove("pointsPerSecond");
-                        compMap.Remove("PointsPerSecond");
-                    }
-
-                    // TechnologyDatabase: reset unlocked technologies and recipes
-                    if (typeName == "TechnologyDatabase")
-                    {
-                        compMap.Remove("unlockedTechnologies");
-                        compMap.Remove("UnlockedTechnologies");
-                        compMap.Remove("unlockedRecipes");
-                        compMap.Remove("UnlockedRecipes");
-                        compMap.Remove("currentTechnologyCards");
-                        compMap.Remove("CurrentTechnologyCards");
-                        compMap.Remove("mainDiscipline");
-                        compMap.Remove("MainDiscipline");
-                    }
-
-                    // Battery: reset charge to 0
-                    // Battery: reset charge to 0
-                    if (typeName == "Battery")
-                    {
-                        compMap["currentCharge"] = new ValueDataNode("0");
-                        compMap["CurrentCharge"] = new ValueDataNode("0");
-                    }
-
-                    // SolutionContainerManager: DO NOT MODIFY - preserve all solution data
-                    // This is critical for ChemMaster buffers and other solution containers
-                    if (typeName == "SolutionContainerManager")
-                    {
-                        // Explicitly DO NOTHING - let the solution data pass through unchanged
-                        // The bug was that solutions were being modified or cleared somewhere
-
-                        // Log the solution data for debugging
-                        if (compMap.TryGetValue("solutions", out var solutionsNode) && solutionsNode is MappingDataNode solutionsMap)
-                        {
-                            foreach (var (solutionName, solutionData) in solutionsMap)
-                            {
-                                Logger.Info($"Preserving solution '{solutionName}' in SolutionContainerManager");
-
-                                if (solutionData is MappingDataNode solutionMap)
-                                {
-                                    if (solutionMap.TryGetValue("contents", out var contentsNode) && contentsNode is SequenceDataNode contents)
-                                    {
-                                        Logger.Info($"  Solution has {contents.Count} reagent entries");
-
-                                        // Verify each reagent entry maintains its structure
-                                        foreach (var contentNode in contents)
-                                        {
-                                            if (contentNode is MappingDataNode reagentMap)
-                                            {
-                                                if (reagentMap.TryGetValue("ReagentId", out var reagentIdNode) && reagentIdNode is ValueDataNode reagentId &&
-                                                    reagentMap.TryGetValue("Quantity", out var quantityNode) && quantityNode is ValueDataNode quantity)
-                                                {
-                                                    Logger.Info($"    - ReagentId: {reagentId.Value}, Quantity: {quantity.Value}");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // DeviceNetwork: clear device lists that contain invalid EntityUid references
-                    if (typeName == "DeviceNetwork")
-                    {
-                        compMap.Remove("devices");
-                        compMap.Remove("Devices");
-                    }
-
-                    // UserInterface: remove to prevent invalid EntityUid references
-                    // (This is handled by filteredTypes but adding explicit note)
-
-                    // Docking: remove to prevent invalid EntityUid references to docked entities
-                    // (This is handled by filteredTypes but adding explicit note)
-
-                    // ActionGrant: remove to prevent invalid EntityUid references to granted actions
-                    // (This is handled by filteredTypes but adding explicit note)
-
-                    // Solution: Force canReact to false to prevent reagent mixing on load
-                    // Only apply to solutions named "buffer" which are ChemMaster buffers, instead of literally everything
-                    if (typeName == "Solution")
-                    {
-                        // Check if this component has a solution field
-                        if (compMap.TryGetValue("solution", out var solutionNode) &&
-                            solutionNode is MappingDataNode solutionMap)
-                        {
-                            // Only set canReact to false for ChemMaster buffers
-                            // Check if the solution name is "buffer"
-                            if (solutionMap.TryGetValue("name", out var nameNode) && 
-                                nameNode is ValueDataNode nameValue && 
-                                nameValue.Value == "buffer")
-                            {
-                                // This is a ChemMaster buffer - prevent mixing
-                                solutionMap["canReact"] = new ValueDataNode("false");
-                                Logger.Info("Set ChemMaster buffer to non-reactive");
-                            }
-                        }
-                    }
-
-                    // ReagentDispenser: Clear storage slot data to force regeneration
-                    if (typeName == "ReagentDispenser")
-                    {
-                        compMap.Remove("storageSlots");
-                        compMap.Remove("storageSlotIds");
-                        compMap.Remove("autoLabel");
-
-                        Logger.Info("Cleared ReagentDispenser storage slots for regeneration");
-                    }
-                    newComps.Add(compMap);
-                }
-
-                // HardLight start: If a prototype contains components that are forced missing, we need to remove those components from all entities of that prototype below and log them for debugging.
-                if (removedFromPrototype != null && removedFromPrototype.Count > 0 || protoMissing != null && protoMissing.Count > 0)
-                {
-                    var existingMissing = new HashSet<string>(StringComparer.Ordinal);
-                    if (entMap.TryGet("missingComponents", out SequenceDataNode? missingNode) && missingNode != null)
-                    {
-                        foreach (var missing in missingNode)
-                        {
-                            if (missing is ValueDataNode value)
-                                existingMissing.Add(value.Value);
-                        }
-                    }
-
-                    var mergedSet = new HashSet<string>(existingMissing, StringComparer.Ordinal);
-                    if (removedFromPrototype != null)
-                    {
-                        foreach (var name in removedFromPrototype)
-                            mergedSet.Add(name);
-                    }
-
-                    if (protoMissing != null)
-                    {
-                        foreach (var name in protoMissing)
-                            mergedSet.Add(name);
-                    }
-
-                    if (allowFillComponents) // HardLight: If this entity is allowed to have fill components, make sure they aren't marked as missing even if the prototype has them forced missing.
-                    {
-                        foreach (var name in fillComponentTypes)
-                            mergedSet.Remove(name);
-                    }
-
-                    if (mergedSet.Count > 0)
-                    {
-                        var mergedMissing = new SequenceDataNode();
-                        foreach (var name in mergedSet)
-                            mergedMissing.Add(new ValueDataNode(name));
-                        entMap["missingComponents"] = mergedMissing;
-                    }
-                }
-                // HardLight end
-
-                if (newComps.Count > 0)
-                {
-                    entMap["components"] = newComps;
-                }
-                else
-                {
-                    // No components left; remove the entire entity
-                    entitiesSeq.RemoveAt(i);
-                    i--;
-                }
-            }
-        }
+        ShipSaveYamlSanitizer.SanitizeShipSaveNode(root, _prototypeManager); // HardLight
     }
 
     private string WriteYamlToString(MappingDataNode node)
