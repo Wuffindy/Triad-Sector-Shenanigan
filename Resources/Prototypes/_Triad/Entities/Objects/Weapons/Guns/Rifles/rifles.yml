@@ -5,14 +5,14 @@
 #  description: Standard issue assault rifle issued to marines and special forces; chambered in 762x51mm ammo. Produced by SESWC.
 #  components:
 #  - type: Sprite
-#    sprite: __Triad/Objects/Weapons/Guns/Rifles/ma5b.rsi
+#    sprite: _Triad/Objects/Weapons/Guns/Rifles/ma5b.rsi
 #    layers:
 #      - state: base
 #        map: ["enum.GunVisualLayers.Base"]
 #      - state: mag-0
 #        map: ["enum.GunVisualLayers.Mag"]
 #  - type: Clothing
-#    sprite: __Triad/Objects/Weapons/Guns/Rifles/ma5b.rsi
+#    sprite: _Triad/Objects/Weapons/Guns/Rifles/ma5b.rsi
 #    quickEquip: false
 #    slots:
 #    - Back
