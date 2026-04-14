@@ -136,6 +136,9 @@
   id: Bot
 
 - type: Tag
+  id: BotanicalTableCompatible
+
+- type: Tag
   id: BotanyHatchet
 
 - type: Tag
@@ -806,6 +809,9 @@
 
 - type: Tag
   id: Medal
+
+- type: Tag
+  id: MedicialBluespaceDeskCompatible
 
 - type: Tag
   id: Medkit

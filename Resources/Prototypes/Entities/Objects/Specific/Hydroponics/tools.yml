@@ -185,3 +185,8 @@
           True: { visible: True }
           False: { visible: False }
   # End DeltaV Additions
+  # Triad
+  - type: Tag
+    tags:
+    - BotanicalTableCompatible
+  # End Triad

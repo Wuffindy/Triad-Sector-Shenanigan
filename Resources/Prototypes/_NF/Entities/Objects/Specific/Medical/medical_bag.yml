@@ -62,3 +62,8 @@
           True: { visible: True }
           False: { visible: False }
   # End Frontier
+  # Triad
+  - type: Tag
+    tags:
+    - MedicialBluespaceDeskCompatible  
+  # End Triad

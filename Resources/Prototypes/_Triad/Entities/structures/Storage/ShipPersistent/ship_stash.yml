@@ -1,5 +1,5 @@
 - type: entity
-  id: military_storage_stash
+  id: MilitaryStorageStash
   parent: BaseStructureDynamic
   name: military storage stash
   description: Tbd
@@ -25,12 +25,10 @@
         type: StorageBoundUserInterface
   - type: Storage
     grid:
-    - 0,0,4,7
+    - 0,0,3,7
     - 5,0,11,7
     maxItemSize: Ginormous
     blacklist:
-      tags:
-      - Admin
       components:
       - StorageFill
       - PresetIdCard
@@ -39,5 +37,145 @@
       - Store
       - Cash
       - Headset
-      - DnaSequenceInjector
+  - type: HLPersistOnShipSave
+
+- type: entity
+  id: MedicalBluespaceDesk
+  parent: BaseStructureDynamic
+  name: medical bluespace desk
+  description: Tbd
+  components:
+  - type: Sprite
+    sprite: _Triad/Structure/Storage/ShipStashes/medical_bluespace_desk.rsi
+    state: medical_bluespace_desk
+    noRot: true
+  - type: Transform
+    noRot: true
+    anchored: true
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.5,-0.5,0.5,0.5"
+        density: 15
+  - type: InteractionOutline
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
+  - type: Storage
+    grid:
+    - 0,0,2,1
+    - 0,3,2,6
+    - 4,0,9,6
+    maxItemSize: Ginormous
+    whitelist:
+      components:
+        - Pill
+        - Hypospray
+        - MedicalBag
+      tags:
+        - PillCanister
+        - CentrifugeCompatible
+        - Syringe
+        - Ointment
+        - Brutepack
+        - Bloodpack
+        - Gauze
+        - Bottle
+        - GlassBeaker
+        - ChemDispensable
+        - MedicialBluespaceDeskCompatible
+  - type: HLPersistOnShipSave
+
+- type: entity
+  id: BotanyTable
+  parent: BaseStructureDynamic
+  name: botany table
+  description: Tbd
+  components:
+  - type: Sprite
+    sprite: _Triad/Structure/Storage/ShipStashes/botany_table.rsi
+    state: botany_table
+    noRot: true
+  - type: Transform
+    noRot: true
+    anchored: true
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.5,-0.5,0.5,0.5"
+        density: 15
+  - type: InteractionOutline
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
+  - type: Storage
+    grid:
+    - 0,0,0,0
+    - 0,2,0,2
+    - 2,0,2,0
+    - 2,2,2,2
+    - 4,0,4,0
+    - 4,2,4,2
+    - 0,4,4,6
+    - 6,0,9,6
+    maxItemSize: Ginormous
+    whitelist:
+      components:
+      - Produce
+      - Seed
+      tags:
+      - BotanicalTableCompatible
+      - BotanyShovel
+      - BotanyHatchet
+      - PlantSampleTaker
+      - Hoe
+      - BotanyHoe
+      - PlantAnalyzer
+  - type: HLPersistOnShipSave
+
+- type: entity
+  id: CivilianStorageStash
+  parent: BaseStructureDynamic
+  name: civilian storage stash
+  description: Tbd
+  components:
+  - type: Sprite
+    sprite: _Triad/Structure/Storage/ShipStashes/civilian_storage_stash.rsi
+    state: civilian_storage_stash
+    noRot: true
+  - type: Transform
+    noRot: true
+    anchored: true
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.5,-0.5,0.5,0.5"
+        density: 15
+  - type: InteractionOutline
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
+  - type: Storage
+    grid:
+    - 0,0,3,7
+    - 5,0,11,7
+    maxItemSize: Large
+    blacklist:
+      components:
+      - StorageFill
+      - PresetIdCard
+      - IdCard
+      - Access
+      - Store
+      - Cash
+      - Headset
   - type: HLPersistOnShipSave
