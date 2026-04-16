@@ -12857,13 +12857,13 @@ entities:
     - type: Transform
       pos: 10.5,29.5
       parent: 1
-- proto: PosterLegitSafetyMothFires
-  entities:
-  - uid: 1821
-    components:
-    - type: Transform
-      pos: -6.5,6.5
-      parent: 1
+#- proto: PosterLegitSafetyMothFires
+#  entities:
+#  - uid: 1821
+#    components:
+#    - type: Transform
+#      pos: -6.5,6.5
+#      parent: 1
 - proto: PosterLegitSafetyMothHardhat
   entities:
   - uid: 1819
