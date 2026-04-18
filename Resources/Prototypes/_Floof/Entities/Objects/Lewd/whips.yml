@@ -16,7 +16,7 @@
     angle: 120
     animation: WeaponArcSlash
     soundHit:
-      path: /Audio/Floof/Lewd/whip.ogg
+      path: /Audio/_Floof/Lewd/whip.ogg
   - type: StaminaDamageOnHit
     damage: 20
   - type: StaminaDamageOnCollide

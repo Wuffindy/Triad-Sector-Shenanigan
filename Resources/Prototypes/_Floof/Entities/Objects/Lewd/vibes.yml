@@ -16,16 +16,16 @@
   - type: UseDelay
     delay: 1.0
   - type: Appearance
-  - type: GenericVisualizer
-    visuals:
-      enum.ToggleVisuals.Toggled:
-        on:
-          True: { visible: true }
-          False: { visible: false }
-        base:
-          True: { visible: false }
-          False: { visible: true }
-
+# - type: GenericVisualizer  Need maintainer to look at it
+#   visuals:
+#     enum.ToggleVisuals.Toggled:
+#       on:
+#         True: { visible: true }
+#         False: { visible: false }
+#       base:
+#         True: { visible: false }
+#         False: { visible: true }
+#
 - type: entity
   parent: BaseVibe
   id: LewdWand
