@@ -99,8 +99,8 @@
   - BluespaceSalvageEventScheduler
   - SmugglingEventScheduler
   - FrontierRoundstartVariation
-  - MonoChimeraSTCShuttleSpawnerScheduler
-  - MonoMonolithicEventsScheduler
+  # - MonoChimeraSTCShuttleSpawnerScheduler
+  # - MonoMonolithicEventsScheduler
   - PortstrikeAnnounceRuleHour4
 
 - type: gamePreset
@@ -116,10 +116,10 @@
   - BluespaceSalvageEventScheduler
   - SmugglingEventScheduler
   - FrontierRoundstartVariation
-  - MonoChimeraSTCShuttleSpawnerSchedulerSlow
-  - MonoAISTCShuttleSpawnerSchedulerSlow
-  - MonoAISTCShuttleSpawnerSchedulerTier2Slow
-  - MonoAsakimSTCShuttleSpawnerSchedulerSlow
+  # - MonoChimeraSTCShuttleSpawnerSchedulerSlow
+  # - MonoAISTCShuttleSpawnerSchedulerSlow
+  # - MonoAISTCShuttleSpawnerSchedulerTier2Slow
+  # - MonoAsakimSTCShuttleSpawnerSchedulerSlow
   - MonoMonolithicEventsScheduler
   - PortstrikeAnnounceRuleHour4
 
@@ -137,9 +137,9 @@
   - BluespaceSalvageEventScheduler
   - SmugglingEventScheduler
   - FrontierRoundstartVariation
-  - MonoChimeraSTCShuttleSpawnerSchedulerApocalypse
-  - MonoAISTCShuttleSpawnerSchedulerApocalypse
-  - MonoAsakimSTCShuttleSpawnerSchedulerApocalypse
+  # - MonoChimeraSTCShuttleSpawnerSchedulerApocalypse
+  # - MonoAISTCShuttleSpawnerSchedulerApocalypse
+  # - MonoAsakimSTCShuttleSpawnerSchedulerApocalypse
   - MonoMonolithicEventsScheduler
   - RoundEndRuleHour3
   - PortstrikeAnnounceRuleHour1
