@@ -19,10 +19,10 @@
   roles:
   - StationRepresentative
   - StationTrafficController
+  - SecurityGuard
   - CCServiceWorker # nyano
   - NFJanitor
   - MailCarrier # nyano
-  - SecurityGuard
 
 - type: department
   id: Antag
@@ -31,10 +31,12 @@
   color: "#DE3A3A"
   weight: 115 # Mono
   roles:
-  - PirateCaptain
-  - PirateFirstMate
-  - PDVDenasvar # Mono
-  - Pirate
-  - PDVInfiltrator # Mono
-  - PdvBorg # Mono
-  - Prisoner #nyano
+  # - PirateCaptain
+  # - PirateFirstMate
+  # - PDVDenasvar # Mono
+  # - Pirate
+  # - PDVInfiltrator # Mono
+  # - PdvBorg # Mono
+  # - Prisoner #nyano
+  primary: false
+  editorHidden: true # Frontier
